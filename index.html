@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<title>Little Realm</title>
+
+	<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+	<main class="app">
+
+		<header class="header">
+			<h1>🌿 Little Realm</h1>
+			<p>Dein kleines Reich wächst mit dir.</p>
+		</header>
+
+
+		<!-- Begleiter -->
+
+		<section class="companion">
+
+			<div class="companion-image">
+				🦊
+			</div>
+
+			<div>
+				<h2>Dein kleiner Begleiter</h2>
+				<p>Er wartet schon auf deine nächsten Aufgaben.</p>
+			</div>
+
+		</section>
+
+
+		<!-- XP -->
+
+		<section class="xp-card">
+
+			<div class="xp-header">
+				<span>✨ Erfahrung</span>
+				<span id="xp-text">0 / 100 XP</span>
+			</div>
+
+			<div class="xp-bar">
+				<div id="xp-progress"></div>
+			</div>
+
+			<p>Level <span id="level">1</span></p>
+
+		</section>
+
+
+		<!-- Neue Aufgabe -->
+
+		<section class="tasks">
+
+			<h2>➕ Neue Aufgabe</h2>
+
+			<div class="add-task">
+
+				<input
+					type="text"
+					id="new-task-input"
+					placeholder="Was möchtest du erledigen?"
+					maxlength="100"
+					aria-label="Neue Aufgabe"
+				>
+
+				<select id="new-task-xp" aria-label="XP-Belohnung auswählen">
+					<option value="10">10 XP – Kleine Aufgabe</option>
+					<option value="20">20 XP – Normale Aufgabe</option>
+					<option value="30" selected>30 XP – Größere Aufgabe</option>
+					<option value="50">50 XP – Große Aufgabe</option>
+				</select>
+
+				<div class="task-field">
+					<label for="new-task-date">📅 Datum</label>
+					<input type="date" id="new-task-date">
+				</div>
+
+				<div class="task-field">
+					<label for="new-task-time">🕐 Uhrzeit</label>
+					<input type="time" id="new-task-time">
+				</div>
+
+				<label class="reminder-option" for="new-task-reminder">
+					<input type="checkbox" id="new-task-reminder">
+					Erinnerung aktivieren
+				</label>
+
+				<button id="add-task-button">
+					Aufgabe hinzufügen
+				</button>
+
+				<p id="reminder-status" class="form-status" role="status" aria-live="polite"></p>
+
+			</div>
+
+		</section>
+
+
+		<!-- Aufgaben -->
+
+		<section class="tasks">
+
+			<h2>📋 Deine Aufgaben</h2>
+
+			<div id="task-list"></div>
+
+		</section>
+
+	</main>
+
+
+	<script src="script.js"></script>
+
+</body>
+</html>
