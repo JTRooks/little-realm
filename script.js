@@ -18,11 +18,19 @@ const addTaskButton = document.getElementById("add-task-button");
 const taskList = document.getElementById("task-list");
 
 const reminderStatus = document.getElementById("reminder-status");
-const testNotificationButton = document.getElementById("test-notification-button");
+const testNotificationButton = document.getElementById(
+	"test-notification-button"
+);
 
+
+/* ================================
+   AUFGABEN LADEN
+================================ */
 
 function loadTasks() {
+
 	try {
+
 		const savedTasks = JSON.parse(
 			localStorage.getItem("littleRealmTasks") || "[]"
 		);
@@ -38,11 +46,14 @@ function loadTasks() {
 					typeof (task.name ?? task.text) === "string"
 			)
 			.map((task, index) => ({
-				id: Number.isSafeInteger(task.id)
-					? task.id
-					: index + 1,
 
-				name: task.name ?? task.text,
+				id:
+					Number.isSafeInteger(task.id)
+						? task.id
+						: index + 1,
+
+				name:
+					task.name ?? task.text,
 
 				xp:
 					Number.isFinite(task.xp) && task.xp > 0
@@ -59,21 +70,41 @@ function loadTasks() {
 						? task.time
 						: "",
 
-				reminder: Boolean(task.reminder),
+				reminder:
+					Boolean(task.reminder),
 
-				reminderSent: Boolean(task.reminderSent),
+				reminderSent:
+					Boolean(task.reminderSent),
 
-				completed: Boolean(task.completed)
+				completed:
+					Boolean(task.completed)
+
 			}));
+
 	} catch {
+
 		return [];
+
 	}
 }
 
 
+/* ================================
+   SPEICHERN
+================================ */
+
 function saveProgress() {
-	localStorage.setItem("littleRealmXP", xp);
-	localStorage.setItem("littleRealmLevel", level);
+
+	localStorage.setItem(
+		"littleRealmXP",
+		xp
+	);
+
+	localStorage.setItem(
+		"littleRealmLevel",
+		level
+	);
+
 	localStorage.setItem(
 		"littleRealmTasks",
 		JSON.stringify(tasks)
@@ -81,23 +112,41 @@ function saveProgress() {
 }
 
 
+/* ================================
+   XP
+================================ */
+
 function updateXP() {
-	xpText.textContent = `${xp} / ${xpNeeded} XP`;
-	levelText.textContent = level;
 
-	const percentage = (xp / xpNeeded) * 100;
+	xpText.textContent =
+		`${xp} / ${xpNeeded} XP`;
 
-	xpProgress.style.width = `${percentage}%`;
+	levelText.textContent =
+		level;
+
+	const percentage =
+		(xp / xpNeeded) * 100;
+
+	xpProgress.style.width =
+		`${percentage}%`;
 
 	saveProgress();
 }
 
 
+/* ================================
+   AUFGABE HINZUFÜGEN
+================================ */
+
 function addTask() {
-	const taskName = taskInput.value.trim();
+
+	const taskName =
+		taskInput.value.trim();
 
 	if (!taskName) {
+
 		taskInput.focus();
+
 		return;
 	}
 
@@ -108,31 +157,39 @@ function addTask() {
 			0
 		) + 1;
 
-
 	const newTask = {
-		id: nextId,
 
-		name: taskName,
+		id:
+			nextId,
 
-		xp: Number(taskXPSelect.value),
+		name:
+			taskName,
 
-		date: taskDateInput.value,
+		xp:
+			Number(taskXPSelect.value),
 
-		time: taskTimeInput.value,
+		date:
+			taskDateInput.value,
 
-		reminder: taskReminderInput.checked,
+		time:
+			taskTimeInput.value,
 
-		reminderSent: false,
+		reminder:
+			taskReminderInput.checked,
 
-		completed: false
+		reminderSent:
+			false,
+
+		completed:
+			false
 	};
-
 
 	tasks.push(newTask);
 
 	taskInput.value = "";
 	taskDateInput.value = "";
 	taskTimeInput.value = "";
+
 	taskReminderInput.checked = false;
 
 	saveProgress();
@@ -143,19 +200,26 @@ function addTask() {
 }
 
 
+/* ================================
+   AUFGABE ERLEDIGEN
+================================ */
+
 function completeTask(taskId) {
-	const task = tasks.find(
-		(item) => item.id === taskId
-	);
+
+	const task =
+		tasks.find(
+			(item) =>
+				item.id === taskId
+		);
 
 	if (!task || task.completed) {
+
 		return;
 	}
 
 	task.completed = true;
 
 	xp += task.xp;
-
 
 	if (xp >= xpNeeded) {
 
@@ -168,7 +232,6 @@ function completeTask(taskId) {
 		);
 	}
 
-
 	saveProgress();
 
 	updateXP();
@@ -177,17 +240,28 @@ function completeTask(taskId) {
 }
 
 
+/* ================================
+   DATUM FORMATIEREN
+================================ */
+
 function formatDate(dateString) {
 
 	if (!dateString) {
+
 		return "";
 	}
 
-	const date = new Date(
-		`${dateString}T00:00:00`
-	);
+	const date =
+		new Date(
+			`${dateString}T00:00:00`
+		);
 
-	if (Number.isNaN(date.getTime())) {
+	if (
+		Number.isNaN(
+			date.getTime()
+		)
+	) {
+
 		return dateString;
 	}
 
@@ -202,10 +276,13 @@ function formatDate(dateString) {
 }
 
 
+/* ================================
+   AUFGABEN ANZEIGEN
+================================ */
+
 function renderTasks() {
 
 	taskList.replaceChildren();
-
 
 	if (tasks.length === 0) {
 
@@ -215,28 +292,30 @@ function renderTasks() {
 		emptyMessage.textContent =
 			"🌱 Noch keine Aufgaben. Erstelle deine erste Aufgabe!";
 
-		taskList.append(emptyMessage);
+		taskList.append(
+			emptyMessage
+		);
 
 		return;
 	}
-
 
 	for (const task of tasks) {
 
 		const taskElement =
 			document.createElement("div");
 
-		taskElement.className = "task";
-
+		taskElement.className =
+			"task";
 
 		if (task.completed) {
-			taskElement.classList.add("completed");
-		}
 
+			taskElement.classList.add(
+				"completed"
+			);
+		}
 
 		const taskInfo =
 			document.createElement("div");
-
 
 		const taskName =
 			document.createElement("span");
@@ -244,40 +323,38 @@ function renderTasks() {
 		taskName.textContent =
 			task.name;
 
-
 		const taskDetails =
 			document.createElement("small");
 
 		const details = [];
 
-
-		details.push(`+${task.xp} XP`);
-
+		details.push(
+			`+${task.xp} XP`
+		);
 
 		if (task.date) {
+
 			details.push(
 				`📅 ${formatDate(task.date)}`
 			);
 		}
 
-
 		if (task.time) {
+
 			details.push(
 				`🕐 ${task.time}`
 			);
 		}
 
-
 		if (task.reminder) {
+
 			details.push(
 				"🔔 Erinnerung"
 			);
 		}
 
-
 		taskDetails.textContent =
 			details.join(" • ");
-
 
 		taskInfo.append(
 			taskName,
@@ -285,11 +362,11 @@ function renderTasks() {
 			taskDetails
 		);
 
-
 		const button =
 			document.createElement("button");
 
-		button.type = "button";
+		button.type =
+			"button";
 
 		button.textContent =
 			task.completed
@@ -299,20 +376,19 @@ function renderTasks() {
 		button.disabled =
 			task.completed;
 
-
 		button.addEventListener(
 			"click",
 			() => completeTask(task.id)
 		);
-
 
 		taskElement.append(
 			taskInfo,
 			button
 		);
 
-
-		taskList.append(taskElement);
+		taskList.append(
+			taskElement
+		);
 	}
 }
 
@@ -321,14 +397,15 @@ function renderTasks() {
    BENACHRICHTIGUNGEN
 ================================ */
 
-
 function updateReminderStatus(message) {
 
 	if (!reminderStatus) {
+
 		return;
 	}
 
-	reminderStatus.textContent = message;
+	reminderStatus.textContent =
+		message;
 }
 
 
@@ -340,63 +417,70 @@ async function requestNotificationPermission() {
 			"⚠️ Dieser Browser unterstützt keine Benachrichtigungen."
 		);
 
-		return;
+		return false;
 	}
 
-
-	if (Notification.permission === "granted") {
+	if (
+		Notification.permission ===
+		"granted"
+	) {
 
 		updateReminderStatus(
 			"🔔 Erinnerungen sind aktiviert."
 		);
 
-		return;
+		return true;
 	}
 
-
-	if (Notification.permission === "denied") {
+	if (
+		Notification.permission ===
+		"denied"
+	) {
 
 		updateReminderStatus(
-			"⚠️ Benachrichtigungen wurden auf diesem Gerät blockiert."
+			"⚠️ Benachrichtigungen sind auf diesem Gerät blockiert."
 		);
 
-		return;
+		return false;
 	}
-
 
 	try {
 
 		const permission =
 			await Notification.requestPermission();
 
-
-		if (permission === "granted") {
+		if (
+			permission ===
+			"granted"
+		) {
 
 			updateReminderStatus(
 				"🔔 Erinnerungen sind aktiviert."
 			);
 
-		} else if (permission === "denied") {
-
-			updateReminderStatus(
-				"⚠️ Benachrichtigungen wurden blockiert."
-			);
-
-		} else {
-
-			updateReminderStatus(
-				"ℹ️ Benachrichtigungen wurden noch nicht freigegeben."
-			);
+			return true;
 		}
+
+		updateReminderStatus(
+			"⚠️ Benachrichtigungen wurden nicht freigegeben."
+		);
+
+		return false;
 
 	} catch {
 
 		updateReminderStatus(
 			"⚠️ Benachrichtigungen konnten nicht aktiviert werden."
 		);
+
+		return false;
 	}
 }
 
+
+/* ================================
+   ERINNERUNGEN PRÜFEN
+================================ */
 
 function checkReminders() {
 
@@ -404,12 +488,12 @@ function checkReminders() {
 		!("Notification" in window) ||
 		Notification.permission !== "granted"
 	) {
+
 		return;
 	}
 
-
-	const now = new Date();
-
+	const now =
+		new Date();
 
 	for (const task of tasks) {
 
@@ -420,59 +504,83 @@ function checkReminders() {
 			!task.time ||
 			task.reminderSent
 		) {
+
 			continue;
 		}
 
+		/*
+		 * Wir bauen Datum und Uhrzeit
+		 * ausdrücklich als lokale Zeit zusammen.
+		 */
 
 		const reminderDate =
 			new Date(
-				`${task.date}T${task.time}`
+				`${task.date}T${task.time}:00`
 			);
 
+		if (
+			Number.isNaN(
+				reminderDate.getTime()
+			)
+		) {
 
-		if (Number.isNaN(reminderDate.getTime())) {
 			continue;
 		}
 
-
-		const difference =
-			now.getTime() - reminderDate.getTime();
-
-
 		/*
-		 * Wir erlauben ein Zeitfenster von 60 Sekunden.
-		 * Dadurch wird eine Erinnerung nicht stundenlang
-		 * nach ihrem eigentlichen Zeitpunkt ausgelöst.
+		 * Sobald die eingestellte Zeit erreicht
+		 * oder überschritten wurde, wird die
+		 * Erinnerung ausgelöst.
 		 */
 
 		if (
-			difference >= 0 &&
-			difference <= 60000
+			now.getTime() >=
+			reminderDate.getTime()
 		) {
 
-			new Notification(
-				"🌿 Little Realm",
-				{
-					body: `⏰ Zeit für: ${task.name}`,
-					tag: `little-realm-task-${task.id}`
-				}
-			);
+			try {
 
+				new Notification(
+					"🌿 Little Realm",
+					{
+						body:
+							`⏰ Zeit für: ${task.name}`,
 
-			task.reminderSent = true;
+						tag:
+							`little-realm-task-${task.id}`
+					}
+				);
 
-			saveProgress();
+				task.reminderSent =
+					true;
 
-			renderTasks();
+				saveProgress();
+
+				renderTasks();
+
+				updateReminderStatus(
+					`🔔 Erinnerung für „${task.name}“ wurde gesendet.`
+				);
+
+			} catch (error) {
+
+				console.error(
+					"Little Realm Reminder Error:",
+					error
+				);
+
+				updateReminderStatus(
+					`❌ Erinnerung konnte nicht angezeigt werden: ${error.message || error}`
+				);
+			}
 		}
 	}
 }
 
 
 /* ================================
-   EVENT LISTENER
+   BUTTONS
 ================================ */
-
 
 addTaskButton.addEventListener(
 	"click",
@@ -484,60 +592,105 @@ taskInput.addEventListener(
 	"keydown",
 	(event) => {
 
-		if (event.key === "Enter") {
+		if (
+			event.key ===
+			"Enter"
+		) {
+
 			addTask();
 		}
-
 	}
 );
 
+
+/* ================================
+   ERINNERUNG AKTIVIEREN
+================================ */
 
 if (taskReminderInput) {
 
 	taskReminderInput.addEventListener(
 		"change",
-		() => {
+		async () => {
 
-			if (taskReminderInput.checked) {
+			if (
+				taskReminderInput.checked
+			) {
 
-				if (
-					!("Notification" in window)
-				) {
-
-					updateReminderStatus(
-						"⚠️ Dieser Browser unterstützt keine Benachrichtigungen."
-					);
-
-					return;
-				}
-
-
-				if (
-					Notification.permission === "granted"
-				) {
-
-					updateReminderStatus(
-						"🔔 Erinnerungen sind aktiviert."
-					);
-
-				} else if (
-					Notification.permission === "denied"
-				) {
-
-					updateReminderStatus(
-						"⚠️ Benachrichtigungen sind auf diesem Gerät blockiert."
-					);
-
-				} else {
-
-					requestNotificationPermission();
-				}
+				await requestNotificationPermission();
 
 			} else {
 
 				updateReminderStatus("");
 			}
+		}
+	);
+}
 
+
+/* ================================
+   TEST-BENACHRICHTIGUNG
+================================ */
+
+if (testNotificationButton) {
+
+	testNotificationButton.addEventListener(
+		"click",
+		async () => {
+
+			const allowed =
+				await requestNotificationPermission();
+
+			if (!allowed) {
+
+				return;
+			}
+
+			try {
+
+				const notification =
+					new Notification(
+						"🌿 Little Realm",
+						{
+							body:
+								"🔔 Test erfolgreich! Little Realm kann dich benachrichtigen.",
+
+							tag:
+								"little-realm-test"
+						}
+					);
+
+				notification.onshow =
+					() => {
+
+						updateReminderStatus(
+							"✅ Die Test-Benachrichtigung wurde vom Browser angezeigt."
+						);
+					};
+
+				notification.onerror =
+					() => {
+
+						updateReminderStatus(
+							"❌ Firefox hat beim Anzeigen der Benachrichtigung einen Fehler gemeldet."
+						);
+					};
+
+				updateReminderStatus(
+					"🔔 Test-Benachrichtigung wurde an Firefox übergeben..."
+				);
+
+			} catch (error) {
+
+				console.error(
+					"Little Realm Notification Error:",
+					error
+				);
+
+				updateReminderStatus(
+					`❌ Benachrichtigung fehlgeschlagen: ${error.message || error}`
+				);
+			}
 		}
 	);
 }
@@ -547,7 +700,6 @@ if (taskReminderInput) {
    START
 ================================ */
 
-
 updateXP();
 
 renderTasks();
@@ -555,7 +707,8 @@ renderTasks();
 
 if (
 	"Notification" in window &&
-	Notification.permission === "granted"
+	Notification.permission ===
+	"granted"
 ) {
 
 	updateReminderStatus(
@@ -565,8 +718,8 @@ if (
 
 
 /*
- * Little Realm überprüft alle 15 Sekunden,
- * ob eine Erinnerung fällig ist.
+ * Little Realm prüft alle 15 Sekunden
+ * auf fällige Erinnerungen.
  */
 
 setInterval(
@@ -576,46 +729,7 @@ setInterval(
 
 
 /*
- * Einmal direkt prüfen, falls bereits
- * eine Erinnerung fällig ist.
+ * Direkt beim Start einmal prüfen.
  */
 
 checkReminders();
-if (testNotificationButton) {
-	testNotificationButton.addEventListener(
-		"click",
-		async () => {
-
-			if (!("Notification" in window)) {
-				updateReminderStatus(
-					"⚠️ Dieser Browser unterstützt keine Benachrichtigungen."
-				);
-				return;
-			}
-
-			if (Notification.permission !== "granted") {
-				const permission =
-					await Notification.requestPermission();
-
-				if (permission !== "granted") {
-					updateReminderStatus(
-						"⚠️ Benachrichtigungen wurden nicht freigegeben."
-					);
-					return;
-				}
-			}
-
-			new Notification(
-				"🌿 Little Realm",
-				{
-					body: "🔔 Test erfolgreich! Little Realm kann dich benachrichtigen.",
-					tag: "little-realm-test"
-				}
-			);
-
-			updateReminderStatus(
-				"🔔 Test-Benachrichtigung wurde gesendet."
-			);
-		}
-	);
-}
