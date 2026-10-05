@@ -18,6 +18,7 @@ const addTaskButton = document.getElementById("add-task-button");
 const taskList = document.getElementById("task-list");
 
 const reminderStatus = document.getElementById("reminder-status");
+const testNotificationButton = document.getElementById("test-notification-button");
 
 
 function loadTasks() {
@@ -580,3 +581,41 @@ setInterval(
  */
 
 checkReminders();
+if (testNotificationButton) {
+	testNotificationButton.addEventListener(
+		"click",
+		async () => {
+
+			if (!("Notification" in window)) {
+				updateReminderStatus(
+					"⚠️ Dieser Browser unterstützt keine Benachrichtigungen."
+				);
+				return;
+			}
+
+			if (Notification.permission !== "granted") {
+				const permission =
+					await Notification.requestPermission();
+
+				if (permission !== "granted") {
+					updateReminderStatus(
+						"⚠️ Benachrichtigungen wurden nicht freigegeben."
+					);
+					return;
+				}
+			}
+
+			new Notification(
+				"🌿 Little Realm",
+				{
+					body: "🔔 Test erfolgreich! Little Realm kann dich benachrichtigen.",
+					tag: "little-realm-test"
+				}
+			);
+
+			updateReminderStatus(
+				"🔔 Test-Benachrichtigung wurde gesendet."
+			);
+		}
+	);
+}
