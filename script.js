@@ -9,7 +9,7 @@ const xpProgress = document.getElementById("xp-progress");
 const levelText = document.getElementById("level");
 
 const taskInput = document.getElementById("new-task-input");
-const taskXPSelect = document.getElementById("new-task-xp");
+const difficultySelect = document.getElementById("new-task-difficulty");
 const taskDateInput = document.getElementById("new-task-date");
 const taskTimeInput = document.getElementById("new-task-time");
 const taskReminderInput = document.getElementById("new-task-reminder");
@@ -22,15 +22,8 @@ const testNotificationButton = document.getElementById(
 	"test-notification-button"
 );
 
-
-/* ================================
-   AUFGABEN LADEN
-================================ */
-
 function loadTasks() {
-
 	try {
-
 		const savedTasks = JSON.parse(
 			localStorage.getItem("littleRealmTasks") || "[]"
 		);
@@ -46,19 +39,21 @@ function loadTasks() {
 					typeof (task.name ?? task.text) === "string"
 			)
 			.map((task, index) => ({
+				id: Number.isSafeInteger(task.id)
+					? task.id
+					: index + 1,
 
-				id:
-					Number.isSafeInteger(task.id)
-						? task.id
-						: index + 1,
-
-				name:
-					task.name ?? task.text,
+				name: task.name ?? task.text,
 
 				xp:
 					Number.isFinite(task.xp) && task.xp > 0
 						? task.xp
-						: 25,
+						: 20,
+
+				difficulty:
+					typeof task.difficulty === "string"
+						? task.difficulty
+						: "normal",
 
 				date:
 					typeof task.date === "string"
@@ -70,85 +65,90 @@ function loadTasks() {
 						? task.time
 						: "",
 
-				reminder:
-					Boolean(task.reminder),
+				reminder: Boolean(task.reminder),
 
-				reminderSent:
-					Boolean(task.reminderSent),
+				reminderSent: Boolean(task.reminderSent),
 
-				completed:
-					Boolean(task.completed)
-
+				completed: Boolean(task.completed)
 			}));
-
 	} catch {
-
 		return [];
-
 	}
 }
 
-
-/* ================================
-   SPEICHERN
-================================ */
-
 function saveProgress() {
-
-	localStorage.setItem(
-		"littleRealmXP",
-		xp
-	);
-
-	localStorage.setItem(
-		"littleRealmLevel",
-		level
-	);
-
+	localStorage.setItem("littleRealmXP", xp);
+	localStorage.setItem("littleRealmLevel", level);
 	localStorage.setItem(
 		"littleRealmTasks",
 		JSON.stringify(tasks)
 	);
 }
 
-
-/* ================================
-   XP
-================================ */
-
 function updateXP() {
+	xpText.textContent = `${xp} / ${xpNeeded} XP`;
+	levelText.textContent = level;
 
-	xpText.textContent =
-		`${xp} / ${xpNeeded} XP`;
+	const percentage = Math.min(
+		(xp / xpNeeded) * 100,
+		100
+	);
 
-	levelText.textContent =
-		level;
-
-	const percentage =
-		(xp / xpNeeded) * 100;
-
-	xpProgress.style.width =
-		`${percentage}%`;
+	xpProgress.style.width = `${percentage}%`;
 
 	saveProgress();
 }
 
+function getDifficultyXP(difficulty) {
+	switch (difficulty) {
+		case "small":
+			return 10;
 
-/* ================================
-   AUFGABE HINZUFÜGEN
-================================ */
+		case "normal":
+			return 20;
+
+		case "large":
+			return 30;
+
+		case "huge":
+			return 50;
+
+		default:
+			return 20;
+	}
+}
+
+function getDifficultyName(difficulty) {
+	switch (difficulty) {
+		case "small":
+			return "🌱 Kleine Aufgabe";
+
+		case "normal":
+			return "🌿 Normale Aufgabe";
+
+		case "large":
+			return "🌳 Größere Aufgabe";
+
+		case "huge":
+			return "⭐ Große Aufgabe";
+
+		default:
+			return "🌿 Normale Aufgabe";
+	}
+}
 
 function addTask() {
-
-	const taskName =
-		taskInput.value.trim();
+	const taskName = taskInput.value.trim();
 
 	if (!taskName) {
-
 		taskInput.focus();
-
 		return;
 	}
+
+	const difficulty =
+		difficultySelect?.value || "normal";
+
+	const taskXP = getDifficultyXP(difficulty);
 
 	const nextId =
 		tasks.reduce(
@@ -158,30 +158,15 @@ function addTask() {
 		) + 1;
 
 	const newTask = {
-
-		id:
-			nextId,
-
-		name:
-			taskName,
-
-		xp:
-			Number(taskXPSelect.value),
-
-		date:
-			taskDateInput.value,
-
-		time:
-			taskTimeInput.value,
-
-		reminder:
-			taskReminderInput.checked,
-
-		reminderSent:
-			false,
-
-		completed:
-			false
+		id: nextId,
+		name: taskName,
+		xp: taskXP,
+		difficulty: difficulty,
+		date: taskDateInput.value,
+		time: taskTimeInput.value,
+		reminder: taskReminderInput.checked,
+		reminderSent: false,
+		completed: false
 	};
 
 	tasks.push(newTask);
@@ -189,31 +174,20 @@ function addTask() {
 	taskInput.value = "";
 	taskDateInput.value = "";
 	taskTimeInput.value = "";
-
 	taskReminderInput.checked = false;
 
 	saveProgress();
-
 	renderTasks();
 
 	taskInput.focus();
 }
 
-
-/* ================================
-   AUFGABE ERLEDIGEN
-================================ */
-
 function completeTask(taskId) {
-
-	const task =
-		tasks.find(
-			(item) =>
-				item.id === taskId
-		);
+	const task = tasks.find(
+		(item) => item.id === taskId
+	);
 
 	if (!task || task.completed) {
-
 		return;
 	}
 
@@ -221,10 +195,8 @@ function completeTask(taskId) {
 
 	xp += task.xp;
 
-	if (xp >= xpNeeded) {
-
+	while (xp >= xpNeeded) {
 		xp -= xpNeeded;
-
 		level++;
 
 		alert(
@@ -233,35 +205,20 @@ function completeTask(taskId) {
 	}
 
 	saveProgress();
-
 	updateXP();
-
 	renderTasks();
 }
 
-
-/* ================================
-   DATUM FORMATIEREN
-================================ */
-
 function formatDate(dateString) {
-
 	if (!dateString) {
-
 		return "";
 	}
 
-	const date =
-		new Date(
-			`${dateString}T00:00:00`
-		);
+	const date = new Date(
+		`${dateString}T00:00:00`
+	);
 
-	if (
-		Number.isNaN(
-			date.getTime()
-		)
-	) {
-
+	if (Number.isNaN(date.getTime())) {
 		return dateString;
 	}
 
@@ -275,43 +232,29 @@ function formatDate(dateString) {
 	);
 }
 
-
-/* ================================
-   AUFGABEN ANZEIGEN
-================================ */
-
 function renderTasks() {
-
 	taskList.replaceChildren();
 
 	if (tasks.length === 0) {
-
 		const emptyMessage =
 			document.createElement("p");
 
 		emptyMessage.textContent =
 			"🌱 Noch keine Aufgaben. Erstelle deine erste Aufgabe!";
 
-		taskList.append(
-			emptyMessage
-		);
+		taskList.append(emptyMessage);
 
 		return;
 	}
 
 	for (const task of tasks) {
-
 		const taskElement =
 			document.createElement("div");
 
-		taskElement.className =
-			"task";
+		taskElement.className = "task";
 
 		if (task.completed) {
-
-			taskElement.classList.add(
-				"completed"
-			);
+			taskElement.classList.add("completed");
 		}
 
 		const taskInfo =
@@ -320,34 +263,34 @@ function renderTasks() {
 		const taskName =
 			document.createElement("span");
 
-		taskName.textContent =
-			task.name;
+		taskName.textContent = task.name;
 
 		const taskDetails =
 			document.createElement("small");
 
 		const details = [];
 
-		details.push(
-			`+${task.xp} XP`
-		);
+		details.push(`+${task.xp} XP`);
+
+		if (task.difficulty) {
+			details.push(
+				getDifficultyName(task.difficulty)
+			);
+		}
 
 		if (task.date) {
-
 			details.push(
 				`📅 ${formatDate(task.date)}`
 			);
 		}
 
 		if (task.time) {
-
 			details.push(
 				`🕐 ${task.time}`
 			);
 		}
 
 		if (task.reminder) {
-
 			details.push(
 				"🔔 Erinnerung"
 			);
@@ -365,8 +308,7 @@ function renderTasks() {
 		const button =
 			document.createElement("button");
 
-		button.type =
-			"button";
+		button.type = "button";
 
 		button.textContent =
 			task.completed
@@ -386,33 +328,20 @@ function renderTasks() {
 			button
 		);
 
-		taskList.append(
-			taskElement
-		);
+		taskList.append(taskElement);
 	}
 }
 
-
-/* ================================
-   BENACHRICHTIGUNGEN
-================================ */
-
 function updateReminderStatus(message) {
-
 	if (!reminderStatus) {
-
 		return;
 	}
 
-	reminderStatus.textContent =
-		message;
+	reminderStatus.textContent = message;
 }
 
-
 async function requestNotificationPermission() {
-
 	if (!("Notification" in window)) {
-
 		updateReminderStatus(
 			"⚠️ Dieser Browser unterstützt keine Benachrichtigungen."
 		);
@@ -420,11 +349,7 @@ async function requestNotificationPermission() {
 		return false;
 	}
 
-	if (
-		Notification.permission ===
-		"granted"
-	) {
-
+	if (Notification.permission === "granted") {
 		updateReminderStatus(
 			"🔔 Erinnerungen sind aktiviert."
 		);
@@ -432,28 +357,19 @@ async function requestNotificationPermission() {
 		return true;
 	}
 
-	if (
-		Notification.permission ===
-		"denied"
-	) {
-
+	if (Notification.permission === "denied") {
 		updateReminderStatus(
-			"⚠️ Benachrichtigungen sind auf diesem Gerät blockiert."
+			"⚠️ Benachrichtigungen sind blockiert."
 		);
 
 		return false;
 	}
 
 	try {
-
 		const permission =
 			await Notification.requestPermission();
 
-		if (
-			permission ===
-			"granted"
-		) {
-
+		if (permission === "granted") {
 			updateReminderStatus(
 				"🔔 Erinnerungen sind aktiviert."
 			);
@@ -466,9 +382,7 @@ async function requestNotificationPermission() {
 		);
 
 		return false;
-
 	} catch {
-
 		updateReminderStatus(
 			"⚠️ Benachrichtigungen konnten nicht aktiviert werden."
 		);
@@ -477,26 +391,17 @@ async function requestNotificationPermission() {
 	}
 }
 
-
-/* ================================
-   ERINNERUNGEN PRÜFEN
-================================ */
-
 function checkReminders() {
-
 	if (
 		!("Notification" in window) ||
 		Notification.permission !== "granted"
 	) {
-
 		return;
 	}
 
-	const now =
-		new Date();
+	const now = new Date();
 
 	for (const task of tasks) {
-
 		if (
 			task.completed ||
 			!task.reminder ||
@@ -504,14 +409,8 @@ function checkReminders() {
 			!task.time ||
 			task.reminderSent
 		) {
-
 			continue;
 		}
-
-		/*
-		 * Wir bauen Datum und Uhrzeit
-		 * ausdrücklich als lokale Zeit zusammen.
-		 */
 
 		const reminderDate =
 			new Date(
@@ -523,213 +422,127 @@ function checkReminders() {
 				reminderDate.getTime()
 			)
 		) {
-
 			continue;
 		}
-
-		/*
-		 * Sobald die eingestellte Zeit erreicht
-		 * oder überschritten wurde, wird die
-		 * Erinnerung ausgelöst.
-		 */
 
 		if (
 			now.getTime() >=
 			reminderDate.getTime()
 		) {
-
 			try {
-
 				new Notification(
 					"🌿 Little Realm",
 					{
 						body:
 							`⏰ Zeit für: ${task.name}`,
-
 						tag:
 							`little-realm-task-${task.id}`
 					}
 				);
 
-				task.reminderSent =
-					true;
+				task.reminderSent = true;
 
 				saveProgress();
-
 				renderTasks();
 
 				updateReminderStatus(
 					`🔔 Erinnerung für „${task.name}“ wurde gesendet.`
 				);
-
 			} catch (error) {
-
 				console.error(
 					"Little Realm Reminder Error:",
 					error
 				);
 
 				updateReminderStatus(
-					`❌ Erinnerung konnte nicht angezeigt werden: ${error.message || error}`
+					`❌ Erinnerung konnte nicht angezeigt werden.`
 				);
 			}
 		}
 	}
 }
-
-
-/* ================================
-   BUTTONS
-================================ */
 
 addTaskButton.addEventListener(
 	"click",
 	addTask
 );
 
-
 taskInput.addEventListener(
 	"keydown",
 	(event) => {
-
-		if (
-			event.key ===
-			"Enter"
-		) {
-
+		if (event.key === "Enter") {
 			addTask();
 		}
 	}
 );
 
-
-/* ================================
-   ERINNERUNG AKTIVIEREN
-================================ */
-
 if (taskReminderInput) {
-
 	taskReminderInput.addEventListener(
 		"change",
 		async () => {
-
-			if (
-				taskReminderInput.checked
-			) {
-
+			if (taskReminderInput.checked) {
 				await requestNotificationPermission();
-
 			} else {
-
 				updateReminderStatus("");
 			}
 		}
 	);
 }
 
-
-/* ================================
-   TEST-BENACHRICHTIGUNG
-================================ */
-
 if (testNotificationButton) {
-
 	testNotificationButton.addEventListener(
 		"click",
 		async () => {
-
 			const allowed =
 				await requestNotificationPermission();
 
 			if (!allowed) {
-
 				return;
 			}
 
 			try {
-
-				const notification =
-					new Notification(
-						"🌿 Little Realm",
-						{
-							body:
-								"🔔 Test erfolgreich! Little Realm kann dich benachrichtigen.",
-
-							tag:
-								"little-realm-test"
-						}
-					);
-
-				notification.onshow =
-					() => {
-
-						updateReminderStatus(
-							"✅ Die Test-Benachrichtigung wurde vom Browser angezeigt."
-						);
-					};
-
-				notification.onerror =
-					() => {
-
-						updateReminderStatus(
-							"❌ Firefox hat beim Anzeigen der Benachrichtigung einen Fehler gemeldet."
-						);
-					};
+				new Notification(
+					"🌿 Little Realm",
+					{
+						body:
+							"🔔 Test erfolgreich! Little Realm kann dich benachrichtigen.",
+						tag:
+							"little-realm-test"
+					}
+				);
 
 				updateReminderStatus(
 					"🔔 Test-Benachrichtigung wurde an Firefox übergeben..."
 				);
-
 			} catch (error) {
-
 				console.error(
 					"Little Realm Notification Error:",
 					error
 				);
 
 				updateReminderStatus(
-					`❌ Benachrichtigung fehlgeschlagen: ${error.message || error}`
+					"❌ Benachrichtigung fehlgeschlagen."
 				);
 			}
 		}
 	);
 }
 
-
-/* ================================
-   START
-================================ */
-
 updateXP();
-
 renderTasks();
-
 
 if (
 	"Notification" in window &&
-	Notification.permission ===
-	"granted"
+	Notification.permission === "granted"
 ) {
-
 	updateReminderStatus(
 		"🔔 Erinnerungen sind aktiviert."
 	);
 }
 
-
-/*
- * Little Realm prüft alle 15 Sekunden
- * auf fällige Erinnerungen.
- */
-
 setInterval(
 	checkReminders,
 	15000
 );
-
-
-/*
- * Direkt beim Start einmal prüfen.
- */
 
 checkReminders();
