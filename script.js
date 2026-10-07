@@ -12,6 +12,7 @@ const taskInput = document.getElementById("new-task-input");
 const difficultySelect = document.getElementById("new-task-difficulty");
 const taskDateInput = document.getElementById("new-task-date");
 const taskTimeInput = document.getElementById("new-task-time");
+const taskRepeatInput = document.getElementById("new-task-repeat");
 const taskReminderInput = document.getElementById("new-task-reminder");
 
 const addTaskButton = document.getElementById("add-task-button");
@@ -162,6 +163,7 @@ function addTask() {
 		name: taskName,
 		xp: taskXP,
 		difficulty: difficulty,
+		repeat: taskRepeatInput?.value || "none",
 		date: taskDateInput.value,
 		time: taskTimeInput.value,
 		reminder: taskReminderInput.checked,
@@ -295,6 +297,17 @@ function renderTasks() {
 				"🔔 Erinnerung"
 			);
 		}
+		if (task.repeat && task.repeat !== "none") {
+    const repeatNames = {
+        daily: "🔁 Jeden Tag",
+        weekly: "🔁 Jede Woche",
+        monthly: "🔁 Jeden Monat"
+    };
+
+    details.push(
+        repeatNames[task.repeat] || "🔁 Wiederholung"
+    );
+}
 
 		taskDetails.textContent =
 			details.join(" • ");
