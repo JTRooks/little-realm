@@ -1,6 +1,9 @@
 let xp = Number(localStorage.getItem("littleRealmXP")) || 0;
 let level = Number(localStorage.getItem("littleRealmLevel")) || 1;
 let tasks = loadTasks();
+let streaks = JSON.parse(
+    localStorage.getItem("littleRealmStreaks")
+) || {};
 
 const xpNeeded = 100;
 
@@ -190,40 +193,48 @@ function addTask() {
 }
 
 function completeTask(taskId) {
-	const task = tasks.find(
-		(item) => item.id === taskId
-	);
+    const task = tasks.find(
+        (item) => item.id === taskId
+    );
 
-	if (!task || task.completed) {
-		return;
-	}
+    if (!task || task.completed) {
+        return;
+    }
 
-	if (task.repeat && task.repeat !== "none" && task.date) {
-	task.date = getNextRepeatDate(
-		task.date,
-		task.repeat
-	);
+    // Streak für diese Aufgabe erhöhen
+    streaks[task.id] = (streaks[task.id] || 0) + 1;
 
-	task.reminderSent = false;
-	task.completed = false;
-} else {
-	task.completed = true;
-}
+    if (task.repeat && task.repeat !== "none" && task.date) {
+        task.date = getNextRepeatDate(
+            task.date,
+            task.repeat
+        );
 
-	xp += task.xp;
+        task.reminderSent = false;
+        task.completed = false;
+    } else {
+        task.completed = true;
+    }
 
-	while (xp >= xpNeeded) {
-		xp -= xpNeeded;
-		level++;
+    xp += task.xp;
 
-		alert(
-			`✨ Dein Little Realm wächst! Du bist jetzt Level ${level}!`
-		);
-	}
+    while (xp >= xpNeeded) {
+        xp -= xpNeeded;
+        level++;
 
-	saveProgress();
-	updateXP();
-	renderTasks();
+        alert(
+            `✨ Dein Little Realm wächst! Du bist jetzt Level ${level}!`
+        );
+    }
+
+    localStorage.setItem(
+        "littleRealmStreaks",
+        JSON.stringify(streaks)
+    );
+
+    saveProgress();
+    updateXP();
+    renderTasks();
 }
 function getNextRepeatDate(dateString, repeat) {
 	const [year, month, day] = dateString
