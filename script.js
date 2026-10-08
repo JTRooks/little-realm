@@ -56,6 +56,11 @@ function loadTasks() {
 						? task.difficulty
 						: "normal",
 
+repeat:
+	typeof task.repeat === "string"
+		? task.repeat
+		: "none",
+
 				date:
 					typeof task.date === "string"
 						? task.date
@@ -193,7 +198,17 @@ function completeTask(taskId) {
 		return;
 	}
 
+	if (task.repeat && task.repeat !== "none" && task.date) {
+	task.date = getNextRepeatDate(
+		task.date,
+		task.repeat
+	);
+
+	task.reminderSent = false;
+	task.completed = false;
+} else {
 	task.completed = true;
+}
 
 	xp += task.xp;
 
@@ -209,6 +224,35 @@ function completeTask(taskId) {
 	saveProgress();
 	updateXP();
 	renderTasks();
+}
+function getNextRepeatDate(dateString, repeat) {
+	const [year, month, day] = dateString
+		.split("-")
+		.map(Number);
+
+	const date = new Date(year, month - 1, day);
+
+	if (Number.isNaN(date.getTime())) {
+		return dateString;
+	}
+
+	if (repeat === "daily") {
+		date.setDate(date.getDate() + 1);
+	}
+
+	if (repeat === "weekly") {
+		date.setDate(date.getDate() + 7);
+	}
+
+	if (repeat === "monthly") {
+		date.setMonth(date.getMonth() + 1);
+	}
+
+	const nextYear = date.getFullYear();
+	const nextMonth = String(date.getMonth() + 1).padStart(2, "0");
+	const nextDay = String(date.getDate()).padStart(2, "0");
+
+	return `${nextYear}-${nextMonth}-${nextDay}`;
 }
 
 function formatDate(dateString) {
