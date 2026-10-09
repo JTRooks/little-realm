@@ -192,6 +192,14 @@ function addTask() {
 	taskInput.focus();
 }
 
+function getLocalDateString() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+}
 function completeTask(taskId) {
     const task = tasks.find(
         (item) => item.id === taskId
@@ -201,8 +209,32 @@ function completeTask(taskId) {
         return;
     }
 
-    // Streak für diese Aufgabe erhöhen
-    streaks[task.id] = (streaks[task.id] || 0) + 1;
+    const today = getLocalDateString();
+
+    const previousDate = streaks[task.id]?.lastDate;
+    const previousCount = streaks[task.id]?.count || 0;
+
+    let nextCount = 1;
+
+    if (previousDate) {
+        const previous = new Date(`${previousDate}T12:00:00`);
+        const current = new Date(`${today}T12:00:00`);
+
+        const daysSinceLastCompletion = Math.round(
+            (current - previous) / (1000 * 60 * 60 * 24)
+        );
+
+        if (daysSinceLastCompletion === 0) {
+            nextCount = previousCount;
+        } else if (daysSinceLastCompletion === 1) {
+            nextCount = previousCount + 1;
+        }
+    }
+
+    streaks[task.id] = {
+        count: nextCount,
+        lastDate: today
+    };
 
     if (task.repeat && task.repeat !== "none" && task.date) {
         task.date = getNextRepeatDate(
@@ -326,8 +358,9 @@ function renderTasks() {
 			document.createElement("small");
 
 		const details = [];
-		if (streaks[task.id] > 0) {
-    details.push(`🔥 Streak: ${streaks[task.id]}`);
+		if (streaks[task.id]?.count > 0) {
+    
+			details.push(`🔥 Streak: ${streaks[task.id].count}`);
 }
 
 		details.push(`+${task.xp} XP`);
