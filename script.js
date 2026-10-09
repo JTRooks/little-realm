@@ -326,6 +326,9 @@ function renderTasks() {
 			document.createElement("small");
 
 		const details = [];
+		if (streaks[task.id] > 0) {
+    details.push(`🔥 Streak: ${streaks[task.id]}`);
+}
 
 		details.push(`+${task.xp} XP`);
 
