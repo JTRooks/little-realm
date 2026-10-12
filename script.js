@@ -25,6 +25,19 @@ const reminderStatus = document.getElementById("reminder-status");
 const testNotificationButton = document.getElementById(
 	"test-notification-button"
 );
+const backupButton = document.getElementById("backup-button");
+
+const restoreButton = document.getElementById("restore-button");
+
+const restoreFileInput = document.createElement("input");
+
+
+restoreFileInput.type = "file";
+restoreFileInput.accept = ".json,application/json";
+restoreFileInput.style.display = "none";
+
+document.body.appendChild(restoreFileInput);
+
 
 function loadTasks() {
 	try {
@@ -650,3 +663,108 @@ setInterval(
 );
 
 checkReminders();
+
+
+function exportLittleRealmBackup() {
+    alert("Backup-Funktion wurde gestartet!");
+
+    const backup = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        xp: xp,
+        level: level,
+        tasks: tasks,
+        streaks: streaks
+    };
+
+    const content = JSON.stringify(backup, null, 2);
+
+    const blob = new Blob(
+        [content],
+        { type: "application/json" }
+    );
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "little-realm-backup.json";
+    link.click();
+
+    URL.revokeObjectURL(url);
+}
+
+if (backupButton) {
+    backupButton.addEventListener("click", function () {
+        alert("Der Backup-Button funktioniert!");
+        exportLittleRealmBackup();
+    });
+} else {
+    alert("Der Backup-Button wurde nicht gefunden!");
+}
+
+
+function restoreLittleRealmBackup(file) {
+    const reader = new FileReader();
+
+    reader.onload = function () {
+        try {
+            const backup = JSON.parse(reader.result);
+
+            if (
+                !backup ||
+                backup.version !== 1 ||
+                !Array.isArray(backup.tasks) ||
+                !Number.isFinite(backup.xp) ||
+                !Number.isFinite(backup.level) ||
+                !backup.streaks ||
+                typeof backup.streaks !== "object"
+            ) {
+                alert("Diese Backup-Datei ist ungültig.");
+                return;
+            }
+
+            if (!confirm(
+                "Deine aktuellen Daten werden durch das Backup ersetzt. Fortfahren?"
+            )) {
+                return;
+            }
+
+            xp = backup.xp;
+            level = backup.level;
+            tasks = backup.tasks;
+            streaks = backup.streaks;
+
+            localStorage.setItem(
+                "littleRealmStreaks",
+                JSON.stringify(streaks)
+            );
+
+            saveProgress();
+            updateXP();
+            renderTasks();
+
+            alert("✨ Dein Little Realm wurde wiederhergestellt!");
+        } catch {
+            alert("Die Backup-Datei konnte nicht gelesen werden.");
+        }
+    };
+
+    reader.readAsText(file);
+}
+
+if (restoreButton) {
+    restoreButton.addEventListener("click", function () {
+        restoreFileInput.click();
+    });
+}
+
+restoreFileInput.addEventListener("change", function () {
+    const file = restoreFileInput.files[0];
+
+    if (file) {
+        restoreLittleRealmBackup(file);
+    }
+
+    restoreFileInput.value = "";
+});
