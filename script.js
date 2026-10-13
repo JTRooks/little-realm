@@ -39,73 +39,124 @@ restoreFileInput.style.display = "none";
 document.body.appendChild(restoreFileInput);
 
 
+
 function loadTasks() {
-	try {
-		const savedTasks = JSON.parse(
-			localStorage.getItem("littleRealmTasks") || "[]"
-		);
+    try {
+        const savedTasks = JSON.parse(
+            localStorage.getItem("littleRealmTasks") || "[]"
+        );
 
-		if (!Array.isArray(savedTasks)) {
-			return [];
-		}
+        if (!Array.isArray(savedTasks)) {
+            return [];
+        }
 
-		return savedTasks
-			.filter(
-				(task) =>
-					task &&
-					typeof (task.name ?? task.text) === "string"
-			)
-			.map((task, index) => ({
-				id: Number.isSafeInteger(task.id)
-					? task.id
-					: index + 1,
+        const allowedDifficulties = [
+            "small",
+            "normal",
+            "large",
+            "huge"
+        ];
 
-				name: task.name ?? task.text,
+        const allowedRepeats = [
+            "none",
+            "daily",
+            "weekly",
+            "monthly"
+        ];
 
-				xp:
-					Number.isFinite(task.xp) && task.xp > 0
-						? task.xp
-						: 20,
+        const validTasks = savedTasks
+            .filter((task) =>
+                task &&
+                typeof (task.name ?? task.text) === "string" &&
+                (task.name ?? task.text).trim().length > 0
+            )
+            .map((task, index) => {
+                const difficulty = allowedDifficulties.includes(
+                    task.difficulty
+                )
+                    ? task.difficulty
+                    : "normal";
 
-				difficulty:
-					typeof task.difficulty === "string"
-						? task.difficulty
-						: "normal",
+                const repeat = allowedRepeats.includes(task.repeat)
+                    ? task.repeat
+                    : "none";
 
-repeat:
-	typeof task.repeat === "string"
-		? task.repeat
-		: "none",
+                const xp = Number.isSafeInteger(task.xp) &&
+                    task.xp > 0 &&
+                    task.xp <= 1000
+                    ? task.xp
+                    : 20;
 
-				date:
-					typeof task.date === "string"
-						? task.date
-						: "",
+                return {
+                    id: Number.isSafeInteger(task.id) && task.id > 0
+                        ? task.id
+                        : index + 1,
 
-				time:
-					typeof task.time === "string"
-						? task.time
-						: "",
+                    name: (task.name ?? task.text).trim(),
+                    xp,
+                    difficulty,
+                    repeat,
 
-				reminder: Boolean(task.reminder),
+                    date: typeof task.date === "string"
+                        ? task.date
+                        : "",
 
-				reminderSent: Boolean(task.reminderSent),
+                    time: typeof task.time === "string"
+                        ? task.time
+                        : "",
 
-				completed: Boolean(task.completed)
-			}));
-	} catch {
-		return [];
-	}
+                    reminder: task.reminder === true,
+                    reminderSent: task.reminderSent === true,
+                    completed: task.completed === true
+                };
+            });
+
+        // Doppelte IDs entfernen, damit nicht mehrere Aufgaben
+        // versehentlich dieselbe Identität verwenden.
+        const usedIds = new Set();
+
+        return validTasks.filter((task) => {
+            if (usedIds.has(task.id)) {
+                return false;
+            }
+
+            usedIds.add(task.id);
+            return true;
+        });
+    } catch {
+        alert(
+            "⚠️ Die gespeicherten Aufgaben konnten nicht gelesen werden."
+        );
+        return [];
+    }
 }
+
+
 
 function saveProgress() {
-	localStorage.setItem("littleRealmXP", xp);
-	localStorage.setItem("littleRealmLevel", level);
-	localStorage.setItem(
-		"littleRealmTasks",
-		JSON.stringify(tasks)
-	);
+    if (
+        !Number.isSafeInteger(xp) ||
+        xp < 0 ||
+        xp >= xpNeeded ||
+        !Number.isSafeInteger(level) ||
+        level < 1 ||
+        !Array.isArray(tasks)
+    ) {
+        alert(
+            "⚠️ Little Realm hat ungültige Fortschrittsdaten erkannt. Speichern wurde abgebrochen."
+        );
+        return;
+    }
+
+    localStorage.setItem("littleRealmXP", xp);
+    localStorage.setItem("littleRealmLevel", level);
+
+    localStorage.setItem(
+        "littleRealmTasks",
+        JSON.stringify(tasks)
+    );
 }
+
 
 function updateXP() {
 	xpText.textContent = `${xp} / ${xpNeeded} XP`;
@@ -281,35 +332,59 @@ function completeTask(taskId) {
     updateXP();
     renderTasks();
 }
+
 function getNextRepeatDate(dateString, repeat) {
-	const [year, month, day] = dateString
-		.split("-")
-		.map(Number);
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateString);
 
-	const date = new Date(year, month - 1, day);
+    if (!match) {
+        return dateString;
+    }
 
-	if (Number.isNaN(date.getTime())) {
-		return dateString;
-	}
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
 
-	if (repeat === "daily") {
-		date.setDate(date.getDate() + 1);
-	}
+    const date = new Date(year, month - 1, day);
 
-	if (repeat === "weekly") {
-		date.setDate(date.getDate() + 7);
-	}
+    // Ungültige Kalenderdaten erkennen
+    if (
+        date.getFullYear() !== year ||
+        date.getMonth() !== month - 1 ||
+        date.getDate() !== day
+    ) {
+        return dateString;
+    }
 
-	if (repeat === "monthly") {
-		date.setMonth(date.getMonth() + 1);
-	}
+    if (repeat === "daily") {
+        date.setDate(date.getDate() + 1);
+    } else if (repeat === "weekly") {
+        date.setDate(date.getDate() + 7);
+    } else if (repeat === "monthly") {
+        // Im Folgemonat den letzten gültigen Tag verwenden
+        const originalDay = date.getDate();
+        const nextMonth = date.getMonth() + 1;
 
-	const nextYear = date.getFullYear();
-	const nextMonth = String(date.getMonth() + 1).padStart(2, "0");
-	const nextDay = String(date.getDate()).padStart(2, "0");
+        date.setDate(1);
+        date.setMonth(nextMonth);
 
-	return `${nextYear}-${nextMonth}-${nextDay}`;
+        const lastDay = new Date(
+            date.getFullYear(),
+            date.getMonth() + 1,
+            0
+        ).getDate();
+
+        date.setDate(Math.min(originalDay, lastDay));
+    } else {
+        return dateString;
+    }
+
+    const nextYear = date.getFullYear();
+    const nextMonthString = String(date.getMonth() + 1).padStart(2, "0");
+    const nextDayString = String(date.getDate()).padStart(2, "0");
+
+    return `${nextYear}-${nextMonthString}-${nextDayString}`;
 }
+
 
 function formatDate(dateString) {
 	if (!dateString) {
