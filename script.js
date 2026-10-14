@@ -1,11 +1,68 @@
 let xp = Number(localStorage.getItem("littleRealmXP")) || 0;
 let level = Number(localStorage.getItem("littleRealmLevel")) || 1;
 let tasks = loadTasks();
-let streaks = JSON.parse(
-    localStorage.getItem("littleRealmStreaks")
-) || {};
+
 
 const xpNeeded = 100;
+
+function loadStreaks() {
+    try {
+        const savedStreaks = JSON.parse(
+            localStorage.getItem("littleRealmStreaks") || "{}"
+        );
+
+        if (
+            !savedStreaks ||
+            typeof savedStreaks !== "object" ||
+            Array.isArray(savedStreaks)
+        ) {
+            return {};
+        }
+
+        const validStreaks = {};
+
+        for (const [taskId, streak] of Object.entries(savedStreaks)) {
+            if (
+                !/^\d+$/.test(taskId) ||
+                !streak ||
+                typeof streak !== "object" ||
+                !Number.isSafeInteger(streak.count) ||
+                streak.count < 1 ||
+                typeof streak.lastDate !== "string" ||
+                !/^\d{4}-\d{2}-\d{2}$/.test(streak.lastDate)
+            ) {
+                continue;
+            }
+
+            const year = Number(streak.lastDate.slice(0, 4));
+            const month = Number(streak.lastDate.slice(5, 7));
+            const day = Number(streak.lastDate.slice(8, 10));
+            const parsedDate = new Date(year, month - 1, day);
+
+            if (
+                parsedDate.getFullYear() !== year ||
+                parsedDate.getMonth() !== month - 1 ||
+                parsedDate.getDate() !== day ||
+                streak.lastDate > getLocalDateString()
+            ) {
+                continue;
+            }
+
+            validStreaks[taskId] = {
+                count: streak.count,
+                lastDate: streak.lastDate
+            };
+        }
+
+        return validStreaks;
+    } catch {
+        alert("⚠️ Die gespeicherten Streak-Daten konnten nicht gelesen werden.");
+        return {};
+    }
+}
+
+let streaks = loadStreaks();
+
 
 const xpText = document.getElementById("xp-text");
 const xpProgress = document.getElementById("xp-progress");
