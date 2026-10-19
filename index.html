@@ -142,7 +142,38 @@
 
 	</main>
 
-	<script src="script.js?v=2"></script>
+
+<section id="cloud-sync" class="cloud-sync">
+    <h2>☁️ Little Realm – Cloud-Synchronisierung</h2>
+
+    <p>
+        Verbinde deine Geräte und behalte deinen Fortschritt
+        überall im Blick.
+    </p>
+
+    <div id="cloud-auth-status" role="status" aria-live="polite">
+        Anmeldung wird vorbereitet …
+    </div>
+
+    <button id="google-sign-in" type="button">
+        Mit Google anmelden
+    </button>
+
+    <button id="google-sign-out" type="button" hidden>
+        Abmelden
+    </button>
+
+    <button id="cloud-sync-now" type="button" disabled>
+        Jetzt synchronisieren
+    </button>
+
+    <p id="cloud-sync-status" role="status" aria-live="polite">
+        Noch keine Synchronisierung durchgeführt.
+    </p>
+</section>
+
+<script src="script.js?v=2"></script>
+<script type="module" src="firebase-sync.js"></script>
 
 </body>
 </html>
