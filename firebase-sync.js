@@ -158,6 +158,8 @@ const syncButton =
     document.getElementById("cloud-sync-now");
 const syncStatus =
     document.getElementById("cloud-sync-status");
+const mergePreview =
+    document.getElementById("cloud-merge-preview");
 
 if (
     signInButton &&
@@ -208,6 +210,16 @@ if (
 
 onAuthStateChanged(auth, user => {
     LITTLE_REALM_SYNC.user = user;
+    
+    if (mergePreview) {
+    const preview = createMergePreview();
+
+    mergePreview.textContent = JSON.stringify(
+        preview,
+        null,
+        2
+    );
+}
     LITTLE_REALM_SYNC.status =
         user ? "signed-in" : "signed-out";
 
@@ -258,6 +270,47 @@ onAuthStateChanged(auth, user => {
     }
 });
 
+
+function createMergePreview() {
+    const local = createLocalPreview();
+    const issues = [...local.issues];
+
+    const tasksById = new Map();
+
+    for (const task of local.tasks) {
+        if (!Number.isSafeInteger(task.id) || task.id <= 0) {
+            issues.push(
+                `Aufgabe "${task.name || "Unbenannt"}" hat keine stabile ID.`
+            );
+            continue;
+        }
+
+        tasksById.set(task.id, task);
+    }
+
+    return {
+        schemaVersion: 1,
+        mode: "preview-only",
+        local: {
+            xp: local.xp,
+            level: local.level,
+            taskCount: local.summary.taskCount,
+            completedTaskCount: local.summary.completedTaskCount
+        },
+        tasks: {
+            total: local.tasks.length,
+            uniqueIds: tasksById.size,
+            duplicateIds: local.tasks.length - tasksById.size
+        },
+        streaks: {
+            count: local.summary.streakCount
+        },
+        issues,
+        writesToFirebase: false,
+        changesLocalData: false
+    };
+}
+
 export {
     auth,
     db,
@@ -265,5 +318,7 @@ export {
     signInWithGoogle,
     signOutGoogle,
     getSyncStatus,
-    createLocalPreview
+    createLocalPreview,
+    createMergePreview
 };
+
