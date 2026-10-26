@@ -11,7 +11,11 @@ import {
 } from
     "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
 
-import { getFirestore } from
+import {
+    getFirestore,
+    doc,
+    getDoc
+} from
     "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -140,6 +144,29 @@ function createLocalPreview() {
     };
 }
 
+// Liest ausschließlich das eigene Firebase-Benutzerdokument.
+// Es werden keine Daten geschrieben oder verändert.
+async function readCloudPreview(user) {
+    if (!user) {
+        throw new Error("Kein Benutzer angemeldet.");
+    }
+
+    const userRef = doc(db, "users", user.uid);
+    const snapshot = await getDoc(userRef);
+
+    if (!snapshot.exists()) {
+        return {
+            exists: false,
+            data: null
+        };
+    }
+
+    return {
+        exists: true,
+        data: snapshot.data()
+    };
+}
+
 function getSyncStatus() {
     return {
         initialized: LITTLE_REALM_SYNC.initialized,
@@ -160,6 +187,8 @@ const syncStatus =
     document.getElementById("cloud-sync-status");
 const mergePreview =
     document.getElementById("cloud-merge-preview");
+const cloudReadPreview =
+    document.getElementById("cloud-read-preview");
 
 if (
     signInButton &&
@@ -208,18 +237,19 @@ if (
         "Noch deaktiviert: Datenabgleich und Regeln müssen zuerst abgesichert werden.";
 }
 
-onAuthStateChanged(auth, user => {
+onAuthStateChanged(auth, async user => {
     LITTLE_REALM_SYNC.user = user;
-    
-    if (mergePreview) {
-    const preview = createMergePreview();
 
-    mergePreview.textContent = JSON.stringify(
-        preview,
-        null,
-        2
-    );
-}
+    if (mergePreview) {
+        const preview = createMergePreview();
+
+        mergePreview.textContent = JSON.stringify(
+            preview,
+            null,
+            2
+        );
+    }
+
     LITTLE_REALM_SYNC.status =
         user ? "signed-in" : "signed-out";
 
@@ -256,7 +286,7 @@ onAuthStateChanged(auth, user => {
 
         if (preview.issues.length > 0) {
             syncStatus.textContent =
-                `Anmeldung erfolgreich. ${preview.issues.length} Hinweis(e) bei der Datenprüfung. Details stehen in der Browser-Konsole. Es wurde nichts hochgeladen.`;
+                `Anmeldung erfolgreich. ${preview.issues.length} Hinweis(e) bei der Datenprüfung. Es wurde nichts hochgeladen.`;
         } else {
             syncStatus.textContent =
                 `Anmeldung erfolgreich. ${preview.summary.taskCount} Aufgaben, ` +
@@ -264,9 +294,48 @@ onAuthStateChanged(auth, user => {
                 `${preview.xp} XP, Level ${preview.level}. ` +
                 "Es wurde nichts verändert oder hochgeladen.";
         }
+
+        try {
+            const cloudPreview = await readCloudPreview(user);
+
+            if (cloudReadPreview) {
+                cloudReadPreview.textContent = JSON.stringify(
+                    {
+                        readSuccessful: true,
+                        documentExists: cloudPreview.exists,
+                        data: cloudPreview.data
+                    },
+                    null,
+                    2
+                );
+            }
+
+            syncStatus.textContent += cloudPreview.exists
+                ? " Firebase-Benutzerdokument gefunden."
+                : " Noch kein Firebase-Benutzerdokument vorhanden.";
+        } catch (error) {
+            console.error(
+                "Firebase-Leseprüfung fehlgeschlagen:",
+                error
+            );
+
+            if (cloudReadPreview) {
+                cloudReadPreview.textContent =
+                    "Leseprüfung fehlgeschlagen: " +
+                    (error.code || error.message);
+            }
+
+            syncStatus.textContent +=
+                " Firebase-Leseprüfung fehlgeschlagen.";
+        }
     } else {
         syncStatus.textContent =
             "Bitte melde dich an, um die Synchronisierung vorzubereiten.";
+
+        if (cloudReadPreview) {
+            cloudReadPreview.textContent =
+                "Noch keine Google-Anmeldung.";
+        }
     }
 });
 
